@@ -5,7 +5,8 @@ Am creat 4 mașini virtuale: 1 GitLab și 3 aplicații. Am folosit `public_netwo
 
 ## Ansible:
 ### Netdata:
-Am întâmpinat dificultăți la instalarea Netdata, deoarece nu se găsea în repository-ul de pachete. Am procedat diferit pentru a-l instala, așa cum este explicat în comentarii.
+Am întâmpinat dificultăți la instalarea Netdata, deoarece nu se găsea în repository-ul de pachete. Am procedat diferit pentru a-l instala, așa cum este explicat în comentarii. Nu am reusit sa instalez
+pentru firefox certificatul si nu am valid https.
 
 ### Ans_backup:
 Am configurat un backup automat al tuturor mașinilor virtuale folosind cron, iar apoi le repornesc. Outputul este salvat în /root/backups/(nume_masina.data).

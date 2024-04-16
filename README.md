@@ -1,16 +1,16 @@
 # DevOps_Yonder
 
-Vagrantfile: 
-        Am creat 4 masini, 1 gitlab si 3 app, am folosit public_network si m-am folosit de adaptorul de retea pentru a face bridge deoarece
-        tot proiectul a fost facut pe un server care este pe reteaua mea locala si a trebuit sa am acces la masinile virtuale. 
-        De asemenea sunt modificate putin specificatiile masinilor si de asemenea adresele ip. Am inserat automat cheia ssh folosind vagrant cand am creat 
-        masinile.
+## Vagrantfile:
+Am creat 4 mașini virtuale: 1 GitLab și 3 aplicații. Am folosit `public_network` și am configurat adaptorul de rețea pentru a face bridge, deoarece proiectul a fost realizat pe un server local și am avut nevoie de acces la mașinile virtuale. Am inclus automat cheia SSH folosind Vagrant la crearea mașinilor.
 
-Ansible: 
-    Netdata: Am intampinat niste dificultati la instalare si am procedat putin diferit pentru netdata deoarece nu il gaseam in repo, dar este si in comentarii
-             precizat asta.
-    Ans_backup: Am setat folosind cron un backup automat ale tuturor masinilor virtuale si mai apoi le repornesc, outputul este salvat in /root/backups/(masina.data)
+## Ansible:
+### Netdata:
+Am întâmpinat dificultăți la instalarea Netdata, deoarece nu se găsea în repository-ul de pachete. Am procedat diferit pentru a-l instala, așa cum este explicat în comentarii.
 
-Monitee: Folosind monitee am configurat pe masina gaza un api pentru monitorizare, se pot observa statistici, manipula containere, contola servicii/procese etc.
+### Ans_backup:
+Am configurat un backup automat al tuturor mașinilor virtuale folosind cron, iar apoi le repornesc. Outputul este salvat în /root/backups/(nume_masina.data).
 
-Desi am fost atent sa ating toate taskurile este posibil sa fi omis ceva, daca mai sunt de adaugat sau de corectat va rog sa ma anuntati. 
+## Monitee:
+Folosind Monitee, am configurat un API pentru monitorizarea mașinii gazdă. Se pot observa statistici, manipula containere și controla servicii/procese etc.
+
+Desi am fost atent sa ating toate taskurile, este posibil să fi omis ceva. Dacă mai sunt lucruri de adăugat sau corectat, vă rog să mă anunțați.

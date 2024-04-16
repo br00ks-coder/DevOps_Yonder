@@ -1,0 +1,44 @@
+---
+- name: Deploy Playbook
+  hosts : app
+  remote_user: root
+  become: yes
+  vars:
+    user: "{{ lookup('env', 'TOKEN_USERNAME') }}"
+    password: "{{ lookup('env', 'TOKEN_KEY') }}"
+    registry_url: "{{ lookup('env', 'CI_REGISTRY') }}"
+    image: "{{ lookup('env', 'CI_REGISTRY_IMAGE') }}"
+    tag: "{{ lookup('env', 'CI_COMMIT_SHORT_SHA') }}"
+    container_name: "springboot"
+
+  tasks:
+    - name: Log into Gitlab Container Registry
+      docker_login:
+        registry: "{{ registry_url }}"
+        username: "{{ user }}"
+        password: "{{ password }}"
+
+    - name: Pull Docker image
+      docker_image:
+        name: "{{ image }}"
+        tag: "{{ tag }}"
+        source: pull
+
+    - name: Stop and remove existing container
+      docker_container:
+        name: "{{ container_name }}"
+        state: absent
+        force_kill: yes
+      ignore_errors: yes
+
+    - name: Deploy Docker container
+      docker_container:
+        name: "{{ container_name }}"
+        image: "{{ image }}:{{ tag }}"
+        state: started
+        ports:
+          - 80:8080
+
+    - name: Logout from Gitlab Container Registry
+      docker_login:
+        state: absent

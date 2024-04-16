@@ -1,0 +1,14 @@
+---
+- name: Backup vagrant vm
+  hosts: localhost  
+  become: true
+
+  tasks:
+    - name: app1 backup
+      shell: "vagrant package app1 -o /root/backups/app1_{{ ansible_date_time.date }}.box"
+    - name: app2 backup
+      shell: "vagrant package app2 -o /root/backups/app2_{{ ansible_date_time.date }}.box"
+    - name: app3 backup
+      shell: "vagrant package app3 -o /root/backups/app3_{{ ansible_date_time.date }}.box"
+    - name: app_gitlab backup
+      shell: "vagrant package app_gitlab -o /root/backups/app_gitlab_{{ ansible_date_time.date }}.box"

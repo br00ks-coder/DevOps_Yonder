@@ -1,0 +1,172 @@
+---
+- name: update
+  hosts: app
+  become: yes
+  tasks:
+  - name : perform update
+    command: yum update -y
+  - name: perform upgrade
+    command: yum upgrade -y
+#Nu sunt sigur din ce motiv dar a trebui sa gasesc o varianta alternativa de a instala netdata, yum install netdata not found error
+#chiar si dupa update && upgrade
+- name: Install Netdata
+  hosts: app
+  become: yes
+  tasks:
+    - name: Download Netdata installation script
+      shell: "curl -fsSL -O https://my-netdata.io/kickstart.sh"
+
+    - name: Rename installation script
+      shell: "mv kickstart.sh netdata-installer.sh"
+
+    - name: Make installer script executable
+      shell: "chmod +x netdata-installer.sh"
+
+    - name: Execute Netdata installer
+      shell: "./netdata-installer.sh --non-interactive"
+#Setenforce 0 pentru nginx ssl sau netdata tot nu sunt sigur erau progleme la get pentru api, probabil
+#ar fi existat o varianta mai corecta de a oferi permisiuni dar a fost mai usor sa rulez un setenforce 0 de fiecare data :))
+    - name: Setenforce 0
+      shell: "sudo setenforce 0"
+
+#condiguratiile de netdata sunt in folder pe masina de gitlab, sunt copiate pentru a fi configurat reverse proxy 
+- name: Replace netdata.conf
+  hosts: app
+  become: yes
+  tasks:
+    - name: Copy netdata.conf
+      copy:
+        src: netdata.conf
+        dest: /etc/netdata/netdata.conf
+    - name: restart netdata
+      shell: "systemctl restart netdata"
+#same with cert and key
+- name: ssl install
+  hosts: app
+  become: yes
+  tasks:
+    - name: Copy ssl key
+      copy:
+        src: /root/netdata.fiipractic.lan.key
+        dest: /etc/ssl/certs/netdata.fiipractic.lan.key
+    - name: Copy ssl crt
+      copy:
+        src: /root/netdata.fiipractic.lan.crt
+        dest: /etc/ssl/certs/netdata.fiipractic.lan.crt
+
+- name: Install Nginx on CentOS/RHEL
+  hosts: app
+  become: yes
+  tasks:
+    - name: Install Nginx
+      yum:
+        name: nginx
+        state: present
+
+- name: Copy Nginx configuration files
+  hosts: app
+  become: yes
+  tasks:
+    - name: Stop nginx service
+      systemd:
+        name: nginx
+        state: stopped
+
+    - name: Stop netdata service
+      systemd:
+        name: netdata
+        state: stopped
+
+    - name: Delete nginx.conf
+      file:
+        path: /etc/nginx/nginx.conf
+        state: absent
+    - name: Delete netdata.conf
+      file:
+        path: /etc/netdata/netdata.conf
+        state: absent
+
+    - name: Delete sites-available directory
+      file:
+        path: /etc/nginx/sites-available
+        state: directory
+        recurse: yes
+
+    - name: Delete sites-enabled directory
+      file:
+        path: /etc/nginx/sites-enabled
+        state: directory
+        recurse: yes
+
+    - name: Copy site-available directory
+      copy:
+        src: sites-available
+        dest: /etc/nginx/
+    - name: Copy netdata
+      copy:
+        src: netdata.conf
+        dest: /etc/netdata/netdata.conf
+
+    - name: Copy sites-enabled directory
+      copy:
+        src: sites-enabled
+        dest: /etc/nginx/
+
+    - name: Copy nginx.conf
+      copy:
+        src: nginx.conf
+        dest: /etc/nginx/nginx.conf
+
+    - name: Start nginx service
+      systemd:
+        name: nginx
+        state: started
+    - name: Start netdata service
+      systemd:
+        name: netdata
+        state: started
+
+- name: Install login netdata
+  hosts: app
+  become: yes
+  tasks:
+    - name: Install python3-devel package
+      become: true
+      yum:
+        name: python3-devel
+        state: present
+
+    - name: Install python3-pip package
+      become: true
+      yum:
+        name: python3-pip
+        state: present
+
+    - name: Install passlib using pip3
+      become: true
+      pip:
+        name: passlib
+        executable: pip3
+        state: present
+#aici se face configurarea pentru basic auth pentru netdata
+    - name: Install httpd
+      yum:
+        name: httpd-tools
+        state: present
+    - name: Create .htpasswd file
+      htpasswd:
+        path: /etc/nginx/.htpasswd
+        name: root
+        password: "cast12"
+        state: present
+    - name: Add Basic Authentication to Nginx configuration
+      lineinfile:
+        path: /etc/nginx/nginx.conf  # sau calea către fișierul de configurare Nginx
+        line: "auth_basic \"Restricted Access\";\nauth_basic_user_file /etc/nginx/.htpasswd;"
+        insertbefore: "^(\\s*)location\\s*/\\s*{"
+        state: present
+    
+    - name: Restart Nginx service
+      service:
+        name: nginx
+        state: restarted

@@ -1,0 +1,173 @@
+---
+- name: Configure common settings for all servers
+  hosts: all
+  become: true
+  tasks:
+    - name: Install necessary packages
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - vim
+        - wget
+      
+
+    - name: Configure SSH banner
+      copy:
+        content: |
+          This server is restricted to authorized users only. All activities on this system are logged.
+          Unauthorized access will be fully investigated and reported to the appropriate law enforcement agencies.
+        dest: /etc/ssh/banner
+      notify: restart sshd
+
+  handlers:
+    - name: restart sshd
+      service:
+        name: sshd
+        state: restarted
+- name: Install Docker
+  hosts: app
+  become: yes
+  tasks:
+
+    - name: Add Docker repository
+      yum_repository:
+        name: docker-ce-stable
+        description: Docker CE Stable
+        baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
+        gpgcheck: yes
+        gpgkey: https://download.docker.com/linux/centos/gpg
+        enabled: yes
+
+    - name: Install Docker
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+
+    - name: Start and enable Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+- name: Disable Firewalld
+  hosts: app
+  become: yes
+  tasks:
+    - name: Stop Firewalld
+      systemd:
+        name: firewalld
+        state: stopped
+    - name: Disable Firewalld
+      systemd:
+        name: firewalld
+        enabled: no
+
+- name: Schimbare fus
+  hosts: app
+  become: yes
+  tasks:
+    - name: Schimbare fus pentru Bucuresti
+      timezone:
+        name: Europe/Bucharest
+
+- name: Ssh modificare
+  hosts: app
+  become: yes
+  tasks:
+    - name: Setare permitRootLogin to prohibit password
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PermitRootLogin'
+        line: 'PermitRootLogin prohibit-password'
+        state: present
+        backup: yes
+      notify: Restart SSH
+
+  handlers:
+    - name: Restart SSH
+      service: 
+        name: sshd
+        state: restarted
+
+- name: Copy CA
+  hosts: gitlab
+  become: yes
+  tasks:
+    - name: Copy certificate files to the app machines
+      copy: 
+        src: "/root/Ansible/*.fiipractic.lan.crt"
+        dest: "/root/"
+      delegate_to: "{{ item }}"
+      loop: "{{ groups['app'] }}"
+
+    - name: Copy key files to the app machines
+      copy:
+        src: "/root/Ansible/*.fiipractic.lan.key"
+        dest: "/root/"
+      delegate_to: "{{ item }}"
+      loop: "{{ groups['app'] }}"
+
+
+- name: Configure GitLab CE YUM repository
+  hosts: gitlab
+  become: yes
+  tasks:
+    - name: Add GitLab CE YUM repository
+      yum_repository:
+        name: gitlab_gitlab-ce
+        description: GitLab CE YUM repository
+        baseurl: "https://packages.gitlab.com/gitlab/gitlab-ce/el/9/$basearch"
+        gpgcheck: yes
+        gpgkey:
+          - https://packages.gitlab.com/gitlab/gitlab-ce/gpgkey
+          - https://packages.gitlab.com/gitlab/gitlab-ce/gpgkey/gitlab-gitlab-ce-3D645A26AB9FBD22.pub.gpg
+        sslverify: yes
+        sslcacert: /etc/pki/tls/certs/ca-bundle.crt
+        metadata_expire: 300
+      notify: Restart YUM cache
+
+  handlers:
+    - name: Restart YUM cache
+      command: yum clean all
+
+- name: Configure GitLab Runner YUM repository
+  hosts: gitlab
+  become: yes
+  tasks:
+    - name: Add GitLab Runner YUM repository
+      yum_repository:
+        name: runner_gitlab-runner
+        description: GitLab Runner YUM repository
+        baseurl: "https://packages.gitlab.com/runner/gitlab-runner/el/9/$basearch"
+        gpgcheck: yes
+        gpgkey:
+          - https://packages.gitlab.com/runner/gitlab-runner/gpgkey
+          - https://packages.gitlab.com/runner/gitlab-runner/gpgkey/runner-gitlab-runner-4C80FB51394521E9.pub.gpg
+          - https://packages.gitlab.com/runner/gitlab-runner/gpgkey/runner-gitlab-runner-49F16C5CC3A0F81F.pub.gpg
+        sslverify: yes
+        sslcacert: /etc/pki/tls/certs/ca-bundle.crt
+        metadata_expire: 300
+      notify: Restart YUM cache
+
+  handlers:
+    - name: Restart YUM cache
+      command: yum clean all
+
+- name: Install the Gitlab
+  hosts: gitlab
+  become: yes
+  tasks:
+    - name: Install GitLab CE
+      yum:
+        name: gitlab-ce
+        state: present
+    - name: Install GitLab Runner
+      yum:
+        name: gitlab-runner
+        state: present

@@ -13,4 +13,4 @@ Am configurat un backup automat al tuturor mașinilor virtuale folosind cron, ia
 ## Monitee:
 Folosind Monitee, am configurat un API pentru monitorizarea mașinii gazdă. Se pot observa statistici, manipula containere și controla servicii/procese etc.
 
-Desi am fost atent sa ating toate taskurile, este posibil să fi omis ceva. Dacă mai sunt lucruri de adăugat sau corectat, vă rog să mă anunțați.
+Desi am fost atent sa ating toate taskurile, este posibil să fi omis ceva. Dacă mai sunt lucruri de adăugat sau corectat, vă rog să mă anunțați.😊
